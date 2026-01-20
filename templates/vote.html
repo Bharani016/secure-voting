@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Cast Vote | SecureVote</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <canvas id="bg-canvas"></canvas>
+    <div class="ambient-glow"></div>
+    <div class="bg-liquid" id="glow"></div> 
+    <script src="{{ url_for('static', filename='glow.js') }}"></script>
+</head>
+<body>
+
+    <div class="float-wrapper">
+     <div id="page-transition-overlay"></div>
+
+    <div class="glass-panel" style="max-width: 600px;">
+        <h1 class="text-gradient" style="text-align: center; margin-bottom: 1rem;">Cast Your Vote</h1>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Selection is irreversible and recorded on the ledger.</p>
+
+        <form method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for candidate in candidates %}
+            <label style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;">
+                <input type="radio" name="candidate" value="{{ candidate }}" required style="transform: scale(1.5);">
+                <span style="font-size: 1.2rem; font-weight: 500;">{{ candidate }}</span>
+            </label>
+            {% endfor %}
+
+            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">✅ Submit Vote</button>
+        </form>
+
+        <a href="/" class="btn btn-outline" style="margin-top: 1.5rem; width: 100%;">Cancel</a>
+    </div>
+</body>
+</html>

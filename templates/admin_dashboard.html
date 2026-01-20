@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard | SecureVote</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <!-- Background layers -->
+  <canvas id="bg-canvas"></canvas>
+  <div class="ambient-glow"></div>
+  <div class="ambient-glow two"></div>
+  <div id="glow"></div>
+
+  <script src="{{ url_for('static', filename='glow.js') }}"></script>
+</head>
+
+<body>
+  <!-- Page transition -->
+  <div id="page-transition-overlay"></div>
+
+  <!-- Center wrapper (already styled in global CSS) -->
+  <div class="page-center">
+
+    <!-- Glass window -->
+    <div class="glass-panel">
+
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; margin-bottom:2rem;">
+        <h1 class="text-gradient">Admin Dashboard</h1>
+
+        <form method="POST" action="{{ url_for('logout') }}">
+          <button class="btn btn-outline">🔒 Logout</button>
+        </form>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid" style="margin-top:2rem;">
+
+  <!-- Election Status -->
+  <div class="stat-card">
+    <span style="color:var(--text-muted);">Election Status</span>
+    <div class="stat-val" style="color:var(--success); font-size:1.2rem;">
+      ACTIVE
+    </div>
+  </div>
+
+  <!-- Blockchain Network -->
+  <div class="stat-card">
+    <span style="color:var(--text-muted);">Lead Margin</span>
+    <div class="stat-val" style="font-size:1rem;">
+      Single Candidate
+    </div>
+  </div>
+  <!-- Network Crowd Status -->
+  <div class="stat-card">
+    <span style="color:var(--text-muted);">Network Load</span>
+    <div class="stat-val" style="font-size:1.1rem; color:var(--accent);">
+      LOW
+    </div>
+  </div>
+
+</div>
+<div class="stats-grid" style="margin-top:1.5rem;">
+
+  <!-- Blockchain Integrity -->
+  <div class="stat-card">
+    <span style="color:var(--text-muted);">Blockchain Integrity</span>
+    <div style="margin-top:0.5rem; font-size:0.95rem; color:var(--success);">
+      ✔ All votes verified<br>
+      ✔ Immutable ledger
+    </div>
+  </div>
+
+  <!-- Threat Scan -->
+  <div class="stat-card">
+    <span style="color:var(--text-muted);">Threat Scan</span>
+    <div style="margin-top:0.5rem; font-size:0.95rem; color:var(--success);">
+      ✔ No double voting<br>
+      ✔ No anomalies detected
+    </div>
+  </div>
+
+  <!-- Lead Margin (optional) -->
+  
+
+</div>
+
+
+      <!-- Actions -->
+      <div style="display:flex; gap:1rem; justify-content:center; margin-top:2rem; flex-wrap:wrap;">
+        <a href="/add_voter" class="btn btn-primary">➕ Add Voter</a>
+        <a href="/results" class="btn btn-outline">📊 View Results</a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Particle script (unchanged) -->
+  <script>
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, particles = [];
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.size = Math.random() * 2 + 1;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > width) this.vx *= -1;
+        if (this.y < 0 || this.y > height) this.vy *= -1;
+      }
+      draw() {
+        ctx.fillStyle = 'rgba(99,102,241,0.3)';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function initParticles() {
+      particles = [];
+      for (let i = 0; i < Math.min(window.innerWidth / 15, 100); i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, width, height);
+      particles.forEach(p => { p.update(); p.draw(); });
+      particles.forEach((p, i) => {
+        for (let j = i + 1; j < particles.length; j++) {
+          let p2 = particles[j];
+          let dx = p.x - p2.x;
+          let dy = p.y - p2.y;
+          let dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 150) {
+            ctx.strokeStyle = `rgba(99,102,241,${0.15 * (1 - dist / 150)})`;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+          }
+        }
+      });
+      requestAnimationFrame(animateParticles);
+    }
+
+    window.addEventListener('resize', () => {
+      resize();
+      initParticles();
+    });
+
+    resize();
+    initParticles();
+    animateParticles();
+  </script>
+</body>
+</html>

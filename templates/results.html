@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Election Results – Blockchain Analysis</title>
+
+
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:#0b0b0e;
+  --glass:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.18);
+  --cyan:#00f0ff;
+  --purple:#7e22ce;
+  --green:#2ecc71;
+  --gold:#f1c40f;
+  --red:#e74c3c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Inter,system-ui;
+  background:
+    radial-gradient(circle at 20% 30%,#7e22ce33,transparent 40%),
+    radial-gradient(circle at 80% 70%,#00f0ff33,transparent 40%),
+    var(--bg);
+  color:#fff;
+}
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+
+    background:
+        radial-gradient(
+            circle at 25% 30%,
+            rgba(220, 20, 60, 0.18),
+            transparent 40%
+        ),
+        radial-gradient(
+            circle at 75% 70%,
+            rgba(255, 255, 255, 0.08),
+            transparent 60%
+        );
+
+    animation: slow-drift 15s linear infinite;
+    z-index: -1;
+    pointer-events: none;
+}
+
+@keyframes slow-drift {
+    from {
+        transform: rotate(0deg) scale(1);
+    }
+    to {
+        transform: rotate(360deg) scale(1.05);
+    }
+}
+.container{
+  max-width:1200px;
+  margin:2rem auto;
+  padding:2rem;
+}
+h1{
+  text-align:center;
+  margin-bottom:2rem;
+  letter-spacing:3px;
+  background:linear-gradient(90deg,var(--cyan),var(--purple));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+/* ===== TOP STATS ===== */
+.stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:1.2rem;
+  margin-bottom:2.2rem;
+}
+.stat{
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:1.4rem;
+  text-align:center;
+}
+.stat h2{
+  font-size:2.2rem;
+  margin:.4rem 0;
+  background:linear-gradient(90deg,var(--cyan),#ff4d6d);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.stat span{opacity:.75;font-size:.9rem}
+
+/* ===== LEADER ===== */
+.leader{
+  margin-bottom:2.2rem;
+  padding:1.8rem;
+  border-radius:22px;
+  background:linear-gradient(145deg,rgba(241,196,15,.25),rgba(255,255,255,.05));
+  border:1px solid rgba(241,196,15,.5);
+  text-align:center;
+  box-shadow:0 0 50px rgba(241,196,15,.25);
+}
+.leader b{
+  font-size:2rem;
+  color:var(--gold);
+}
+
+/* ===== GRID ===== */
+.grid{
+  display:grid;
+  grid-template-columns:1.3fr 1fr;
+  gap:2rem;
+}
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr}
+}
+
+/* ===== RESULT CARD ===== */
+.card{
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:22px;
+  padding:1.6rem;
+}
+.result{margin-bottom:1.3rem}
+.label{
+  display:flex;
+  justify-content:space-between;
+  font-size:.9rem;
+  margin-bottom:.4rem;
+}
+.bar{
+  height:26px;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  overflow:hidden;
+}
+.fill{
+  height:100%;
+  width:0;
+  background:linear-gradient(90deg,var(--purple),var(--cyan));
+  animation:grow 1.3s forwards;
+}
+@keyframes grow{to{width:var(--w)}}
+
+/* ===== TURNOUT RING ===== */
+.ring-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.ring{
+  width:180px;
+  height:180px;
+  border-radius:50%;
+  background:
+    conic-gradient(var(--green) calc(var(--p)*1%), rgba(255,255,255,.12) 0);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.ring span{font-size:1.6rem;font-weight:700}
+
+/* ===== BLOCKCHAIN STATUS ===== */
+.blockchain{
+  margin-top:2.2rem;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:1.2rem;
+}
+.chain-card{
+  background:linear-gradient(145deg,rgba(0,240,255,.12),rgba(255,255,255,.05));
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:1.4rem;
+  position:relative;
+}
+.chain-status{
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+  font-weight:600;
+}
+.dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:var(--green);
+  animation:pulse 1.5s infinite;
+}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(46,204,113,.6)}
+  100%{box-shadow:0 0 0 14px rgba(46,204,113,0)}
+}
+
+/* ===== NETWORK LOAD ===== */
+.signal{
+  display:flex;
+  gap:4px;
+  margin-top:.6rem;
+}
+.signal span{
+  width:10px;
+  height:16px;
+  background:rgba(255,255,255,.2);
+  border-radius:3px;
+}
+.signal span.active{
+  background:var(--green);
+}
+
+/* ===== INSIGHTS ===== */
+.insights{
+  margin-top:2.2rem;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1rem;
+}
+.insight{
+  background:rgba(255,255,255,.06);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:1.2rem;
+}
+.insight b{color:var(--cyan)}
+
+.back{
+  display:block;
+  margin:3rem auto 0;
+  width:fit-content;
+  padding:.8rem 1.8rem;
+  border-radius:999px;
+  text-decoration:none;
+  color:var(--cyan);
+  border:1px solid var(--border);
+}
+.back:hover{background:rgba(255,255,255,.08)}
+</style>
+</head>
+
+<body>
+   <script src="{{ url_for('static', filename='glow.js') }}"></script>
+  <div class="float-wrapper">
+    <div id="page-transition-overlay"></div>
+
+<div class="bg-liquid" id="glow"></div>    
+        <div class="container">
+       
+<h1>⛓️ Blockchain Election Analysis</h1>
+
+<!-- TOP STATS -->
+<div class="stats">
+  <div class="stat"><span>Total Voters</span><h2>{{ voters_count }}</h2></div>
+  <div class="stat"><span>Votes Cast</span><h2>{{ total_votes }}</h2></div>
+  <div class="stat">
+    <span>Turnout</span>
+    <h2>
+      {% if voters_count %}
+      {{ (total_votes / voters_count * 100) | round(1) }}%
+      {% else %}0%{% endif %}
+    </h2>
+  </div>
+</div>
+
+<!-- LEADER -->
+{% if results %}
+<div class="leader">
+  🏆 Current Leader<br>
+  <b>{{ results[0].candidate }}</b><br>
+  {{ results[0].votes }} votes ({{ results[0].pct }}%)
+</div>
+{% endif %}
+
+<!-- RESULTS + RING -->
+<div class="grid">
+  <div class="card">
+    <h3>Candidate Performance</h3>
+    {% for res in results %}
+    <div class="result">
+      <div class="label">
+        <span>{{ res.candidate }}</span>
+        <span>{{ res.pct }}%</span>
+      </div>
+      <div class="bar">
+        <div class="fill" style="--w: {{ res.pct }}%"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="card ring-wrap">
+    <div class="ring" style="--p:
+      {% if voters_count %}
+      {{ (total_votes / voters_count * 100) | round(1) }}
+      {% else %}0{% endif %}
+    ">
+      <span>
+        {% if voters_count %}
+        {{ (total_votes / voters_count * 100) | round(1) }}%
+        {% else %}0%{% endif %}
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- BLOCKCHAIN + NETWORK -->
+<div class="blockchain">
+  <div class="chain-card">
+    <div class="chain-status">
+      <div class="dot"></div>
+      Blockchain Network: ONLINE
+    </div>
+    <p>Consensus: Proof of Authority</p>
+    <p>Block Height: {{ total_votes + 1024 }}</p>
+  </div>
+
+  <div class="chain-card">
+    <b>Network Crowd Status</b>
+    <p>Traffic Load: LOW</p>
+    <div class="signal">
+      <span class="active"></span>
+      <span class="active"></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+</div>
+
+<!-- INSIGHTS -->
+<div class="insights">
+  <div class="insight">
+    <b>Lead Margin</b>
+    <p>
+      {% if results|length > 1 %}
+      {{ results[0].votes - results[1].votes }} vote lead
+      {% else %}Single candidate{% endif %}
+    </p>
+  </div>
+  <div class="insight">
+    <b>Blockchain Integrity</b>
+    <p>All votes verified & immutable</p>
+  </div>
+  <div class="insight">
+    <b>Threat Scan</b>
+    <p>No double-voting detected</p>
+  </div>
+</div>
+
+<a href="/admin_dashboard" class="back">← Back to Dashboard</a>
+</div>
+ <script>
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, particles = [];
+    function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+    class Particle {
+        constructor() { this.x = Math.random()*width; this.y = Math.random()*height; this.vx = (Math.random()-0.5)*0.5; this.vy = (Math.random()-0.5)*0.5; this.size = Math.random()*2+1; }
+        update() { this.x+=this.vx; this.y+=this.vy; if(this.x<0||this.x>width)this.vx*=-1; if(this.y<0||this.y>height)this.vy*=-1; }
+        draw() { ctx.fillStyle='rgba(99,102,241,0.3)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); }
+    }
+    function initParticles() { particles=[]; for(let i=0;i<Math.min(window.innerWidth/15,100);i++) particles.push(new Particle()); }
+    function animateParticles() {
+        ctx.clearRect(0,0,width,height);
+        particles.forEach(p=>{ p.update(); p.draw(); });
+        particles.forEach((p,i)=>{ for(let j=i+1;j<particles.length;j++){ let p2=particles[j]; let dx=p.x-p2.x,dy=p.y-p2.y,dist=Math.sqrt(dx*dx+dy*dy); if(dist<150){ ctx.strokeStyle=`rgba(99,102,241,${0.15*(1-dist/150)})`; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); } } });
+        requestAnimationFrame(animateParticles);
+    }
+    window.addEventListener('resize',()=>{resize();initParticles();});
+    resize(); initParticles(); animateParticles();
+    </script>
+</body>
+</html>

@@ -1,0 +1,368 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap');
+
+:root {
+  --bg-dark: #05050A;
+  --bg-card: rgba(20, 20, 35, 0.4);
+  --primary: #6366f1;
+  --accent: #00f0ff;
+  --secondary: #d946ef;
+  --success: #10b981;
+  --danger: #ff4d6d;
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.08);
+  --glass: blur(20px) saturate(180%);
+  --font-head: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+  outline: none; 
+   /* Hide default cursor for custom one */ 
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* --- Cursor --- */
+
+
+/* --- Background Elements --- */
+#bg-canvas {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  z-index: -2;
+}
+
+.ambient-glow {
+  position: fixed;
+  width: 800px; height: 800px;
+  background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+  top: -300px; left: -300px;
+  z-index: -1;
+  animation: float 15s infinite ease-in-out;
+  pointer-events: none;
+  filter: blur(80px);
+}
+
+.ambient-glow.two {
+  top: auto; bottom: -300px; left: auto; right: -300px;
+  background: radial-gradient(circle, rgba(0,240,255,0.08) 0%, transparent 70%);
+  animation: float 20s infinite ease-in-out reverse;
+}
+
+/* --- Film Grain Texture --- */
+.noise-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 50;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* --- Liquid Glow (Mouse Follow) --- */
+#glow {
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 100%; 
+    height: 100%;
+    z-index: -2;
+    pointer-events: none;
+    background: radial-gradient(
+        600px circle at var(--x) var(--y), 
+        rgba(99, 102, 241, 0.12),
+        transparent 40%
+    );
+    mix-blend-mode: hard-light;
+}
+
+/* --- Static Glass Panel (Clean, No Tilt) --- */
+/* --- WATER TRANSPARENT GLASS --- */
+.glass-panel {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem;
+  position: relative;
+
+  /* PURE TRANSPARENCY (NO BLUR) */
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.10),
+      rgba(255, 255, 255, 0.02)
+    );
+
+  /* REMOVE BLUR COMPLETELY */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+
+  /* Smooth water edges */
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+
+  /* Liquid depth */
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 1px rgba(255, 255, 255, 0.539),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.15);
+
+  /* Stability */
+  transform: translateZ(0);
+  isolation: isolate;
+}
+.glass-panel::after {
+  content: "";
+  position: absolute;
+  inset: -30px;
+  z-index: -1;
+  animation: waterFloat 12s ease-in-out infinite;
+}
+
+@keyframes waterFloat {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+
+
+
+
+/* --- Typography & Gradients --- */
+.text-gradient {
+  background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+  animation: textShine 5s linear infinite;
+}
+
+@keyframes textShine {
+  to { background-position: 200% center; }
+}
+
+/* --- Buttons --- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0.9rem 2.5rem; border-radius: 50px;
+  font-weight: 600; font-size: 0.95rem;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-decoration: none;
+  border: none; font-family: var(--font-head); color: white;
+  position: relative; overflow: hidden;
+  z-index: 1;
+}
+
+.btn::before {
+  content: '';
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  z-index: -1;
+  transition: transform 0.4s ease;
+}
+
+.btn-primary { 
+  background: linear-gradient(90deg, var(--primary), var(--secondary)); 
+  box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4); 
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 20px 40px -5px rgba(99, 102, 241, 0.6);
+}
+
+.btn-outline {
+  background: transparent; 
+  border: 1px solid var(--border); 
+  color: var(--text-main);
+}
+
+.btn-outline:hover {
+  border-color: var(--accent); 
+  color: var(--accent);
+  background: rgba(0, 240, 255, 0.1);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+/* --- Inputs --- */
+.input-group { margin-bottom: 1.8rem; position: relative; }
+.input-field {
+  width: 100%; background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 1.2rem 1.5rem; color: white; font-family: var(--font-body);
+  font-size: 1rem; transition: all 0.3s;
+}
+.input-field:focus {
+  border-color: var(--accent); background: rgba(0, 240, 255, 0.02);
+  box-shadow: 0 0 0 4px rgba(0, 240, 255, 0.1), 0 0 20px rgba(0, 240, 255, 0.2);
+}
+
+/* --- Stats --- */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.stat-card { 
+  background: rgba(255,255,255,0.02); 
+  border: 1px solid var(--border); 
+  padding: 1.5rem; 
+  border-radius: 16px; 
+  text-align: center; 
+  transition: 0.3s;
+}
+.stat-card:hover { border-color: var(--secondary); background: rgba(255,255,255,0.05); }
+
+.stat-val { 
+  font-size: 2.5rem; 
+  font-family: var(--font-head); 
+  font-weight: 800; 
+  background: linear-gradient(to right, var(--accent), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* --- Face Verify --- */
+.camera-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto 2rem auto;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.1);
+}
+#video {
+  display: block; width: 100%; height: auto; transform: scaleX(-1);
+}
+.scanner-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: linear-gradient(to bottom, rgba(0,240,255,0) 0%, rgba(0,240,255,0) 45%, rgba(0,240,255,0.4) 50%, rgba(0,240,255,0) 55%, rgba(0,240,255,0) 100%);
+  background-size: 100% 200%;
+  animation: scan 2s linear infinite;
+  pointer-events: none; z-index: 2;
+}
+.face-bracket {
+  position: absolute; inset: 20px;
+  border: 2px solid rgba(0, 240, 255, 0.5);
+  border-radius: 12px; pointer-events: none;
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+}
+
+@keyframes scan {
+  0% { background-position: 0% -100%; }
+  100% { background-position: 0% 200%; }
+}
+
+/* --- Animations --- */
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(50px, 80px) rotate(5deg); }
+}
+
+/* ================= MOBILE FIX ================= */
+@media (max-width: 768px) {
+
+  body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ================= CENTER WRAPPER ================= */
+.page-center {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+
+  .glass-panel {
+    max-width: 100%;
+    padding: 1.5rem;
+    border-radius: 20px;
+  }
+
+  h1 {
+    font-size: 2rem !important;
+    line-height: 1.2;
+  }
+
+  p {
+    font-size: 0.95rem;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 0.8rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 1.2rem;
+  }
+
+  /* reduce floating intensity on mobile */
+  .glass-panel::after {
+    animation-duration: 18s;
+  }
+}
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+@media (max-width: 768px) {
+  .glass-panel {
+    border: 1px solid rgba(255,255,255,0.35);
+  }
+}
+
+
+/* ================= WATER CLICK RIPPLE ================= */
+.cursor-ripple {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+
+  border: 2px solid rgba(120, 200, 255, 0.6);
+  background: radial-gradient(
+    circle,
+    rgba(120, 200, 255, 0.25),
+    transparent 60%
+  );
+
+  transform: translate(-50%, -50%) scale(0.2);
+  opacity: 0.9;
+
+  animation: rippleWave 0.8s ease-out forwards;
+}
+
+@keyframes rippleWave {
+  to {
+    transform: translate(-50%, -50%) scale(3.5);
+    opacity: 0;
+  }
+}

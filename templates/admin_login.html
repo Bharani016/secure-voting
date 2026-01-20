@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Admin Access | SecureVote</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <canvas id="bg-canvas"></canvas>
+    <div class="ambient-glow"></div>
+    <div class="bg-liquid" id="glow"></div> 
+    <script src="{{ url_for('static', filename='glow.js') }}"></script>
+
+    <style>
+        .flash-msg { margin-bottom: 1.5rem; padding: 1rem; border-radius: 12px; font-size: 0.9rem; text-align: center; }
+        .flash-error { background: rgba(255, 77, 109, 0.2); border: 1px solid var(--danger); color: var(--danger); }
+    </style>
+</head>
+<body>
+    <div class="float-wrapper">
+   
+   
+    <div class="glass-panel" style="max-width: 400px; text-align: center; border-color: var(--secondary);">
+         <div id="page-transition-overlay"></div>
+        <h1 style="color: var(--secondary); margin-bottom: 0.5rem;">🛡️ Admin Panel</h1>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">Authorized personnel only.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-msg flash-error">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/admin_login">
+            <div class="input-group">
+                <input type="text" 
+                       name="username" 
+                       class="input-field" 
+                       placeholder="Admin Username" 
+                       required />
+            </div>
+            <div class="input-group">
+                <input type="password" 
+                       name="password" 
+                       class="input-field" 
+                       placeholder="Password" 
+                       required />
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; background: linear-gradient(90deg, var(--secondary), var(--primary));">Unlock Dashboard</button>
+        </form>
+
+        <div style="margin-top: 2rem;">
+            <a href="/" class="btn btn-outline" style="padding: 0.6rem 1.5rem; font-size: 0.9rem;">← Back to Home</a>
+        </div>
+    </div>
+
+    <!-- Particle Script -->
+    <script>
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, particles = [];
+    function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+    class Particle {
+        constructor() { this.x = Math.random()*width; this.y = Math.random()*height; this.vx = (Math.random()-0.5)*0.5; this.vy = (Math.random()-0.5)*0.5; this.size = Math.random()*2+1; }
+        update() { this.x+=this.vx; this.y+=this.vy; if(this.x<0||this.x>width)this.vx*=-1; if(this.y<0||this.y>height)this.vy*=-1; }
+        draw() { ctx.fillStyle='rgba(99,102,241,0.3)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); }
+    }
+    function initParticles() { particles=[]; for(let i=0;i<Math.min(window.innerWidth/15,100);i++) particles.push(new Particle()); }
+    function animateParticles() {
+        ctx.clearRect(0,0,width,height);
+        particles.forEach(p=>{ p.update(); p.draw(); });
+        particles.forEach((p,i)=>{ for(let j=i+1;j<particles.length;j++){ let p2=particles[j]; let dx=p.x-p2.x,dy=p.y-p2.y,dist=Math.sqrt(dx*dx+dy*dy); if(dist<150){ ctx.strokeStyle=`rgba(99,102,241,${0.15*(1-dist/150)})`; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); } } });
+        requestAnimationFrame(animateParticles);
+    }
+    window.addEventListener('resize',()=>{resize();initParticles();});
+    resize(); initParticles(); animateParticles();
+    </script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Face Verification | SecureVote</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Background Elements -->
+    <canvas id="bg-canvas"></canvas>
+    <div class="ambient-glow"></div>
+    <div class="ambient-glow two"></div>
+    <!-- Mouse Glow -->
+    <div class="bg-liquid" id="glow"></div> 
+    <script src="{{ url_for('static', filename='glow.js') }}"></script>
+</head>
+<body>
+    <div class="float-wrapper">
+     <div id="page-transition-overlay"></div>
+
+    <div class="glass-panel" style="text-align: center; max-width: 600px;">
+        <h1 class="text-gradient" style="margin-bottom: 0.5rem;">Biometric Verification</h1>
+        <p style="color: var(--text-muted); margin-bottom: 2rem;">
+            Position your face clearly in the frame.<br>
+            Ensure good lighting for accurate matching.
+        </p>
+
+        <div class="camera-container">
+            <div class="scanner-overlay"></div>
+            <div class="face-bracket"></div>
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="canvas" style="display:none;"></canvas>
+        </div>
+        
+        <div class="status-msg" id="status"></div>
+
+        <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+            <button id="capture-btn" class="btn btn-primary">
+                📸 Capture & Verify
+            </button>
+            <a href="/" class="btn btn-outline">Cancel</a>
+        </div>
+    </div>
+
+    <!-- Background Animation Script -->
+    <script>
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let width, height, particles = [];
+    
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+    class Particle {
+        constructor() {
+            this.x = Math.random() * width; this.y = Math.random() * height;
+            this.vx = (Math.random() - 0.5) * 0.5; this.vy = (Math.random() - 0.5) * 0.5;
+            this.size = Math.random() * 2 + 1;
+        }
+        update() { this.x += this.vx; this.y += this.vy; if(this.x<0||this.x>width)this.vx*=-1; if(this.y<0||this.y>height)this.vy*=-1; }
+        draw() { ctx.fillStyle='rgba(99,102,241,0.3)'; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); }
+    }
+    function initParticles() {
+        particles = [];
+        for(let i=0;i<Math.min(window.innerWidth/15,100);i++) particles.push(new Particle());
+    }
+    function animateParticles() {
+        ctx.clearRect(0,0,width,height);
+        particles.forEach(p=>{ p.update(); p.draw(); });
+        particles.forEach((p,i)=>{ for(let j=i+1;j<particles.length;j++){ let p2=particles[j]; let dx=p.x-p2.x,dy=p.y-p2.y,dist=Math.sqrt(dx*dx+dy*dy); if(dist<150){ ctx.strokeStyle=`rgba(99,102,241,${0.15*(1-dist/150)})`; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); } } });
+        requestAnimationFrame(animateParticles);
+    }
+    window.addEventListener('resize',()=>{resize();initParticles();});
+    resize(); initParticles(); animateParticles();
+    </script>
+
+    <!-- Camera & Verification Logic -->
+    <script>
+/* ---------- CAMERA ---------- */
+const videoEl = document.getElementById('video');
+const captureCanvas = document.getElementById('canvas');
+const captureCtx = captureCanvas.getContext('2d');
+const captureBtn = document.getElementById('capture-btn');
+const statusDiv = document.getElementById('status');
+
+async function startCamera() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user" },
+            audio: false
+        });
+        videoEl.srcObject = stream;
+        await videoEl.play();
+    } catch (err) {
+        statusDiv.innerHTML =
+            "<span style='color:var(--danger);'>⚠️ Camera permission required</span>";
+        console.error(err);
+    }
+}
+
+function captureFrame() {
+    captureCanvas.width = videoEl.videoWidth || 640;
+    captureCanvas.height = videoEl.videoHeight || 480;
+    captureCtx.drawImage(videoEl, 0, 0);
+    return captureCanvas.toDataURL("image/jpeg", 0.9);
+}
+
+async function verifyFace() {
+    const frame = captureFrame();
+    const role = "{{ role }}";
+    const endpoint = role === "admin"
+        ? "/admin_face_verify"
+        : "/user_face_verify";
+
+    statusDiv.innerHTML = "🔍 Verifying face securely...";
+
+    try {
+        const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ frame })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+            statusDiv.innerHTML =
+                "<span style='color:var(--success);'>✅ Face verified</span>";
+            setTimeout(() => {
+                window.location.href = data.redirect;
+            }, 1200);
+        } else {
+            statusDiv.innerHTML =
+                `<span style='color:var(--danger);'>❌ ${data.msg}</span>`;
+        }
+    } catch (err) {
+        statusDiv.innerHTML =
+            "<span style='color:var(--danger);'>⚠️ Server error</span>";
+        console.error(err);
+    }
+}
+
+captureBtn.addEventListener("click", verifyFace);
+window.addEventListener("load", startCamera);
+</script>
+</body>
+</html>
