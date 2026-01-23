@@ -4,33 +4,751 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Cast Vote | SecureVote</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <canvas id="bg-canvas"></canvas>
-    <div class="ambient-glow"></div>
-    <div class="bg-liquid" id="glow"></div> 
-    <script src="{{ url_for('static', filename='glow.js') }}"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* =========================================
+           USER PROVIDED CSS (INTEGRATED)
+           ========================================= */
+        :root {
+          --bg-dark: #05050A;
+          --bg-card: rgba(20, 20, 35, 0.4);
+          --primary: #6366f1;
+          --accent: #00f0ff;
+          --secondary: #d946ef;
+          --success: #10b981;
+          --danger: #ff4d6d;
+          --text-main: #ffffff;
+          --text-muted: #94a3b8;
+          --border: rgba(255, 255, 255, 0.08);
+          --glass: blur(20px) saturate(180%);
+          --font-head: 'Outfit', sans-serif;
+          --font-body: 'Inter', sans-serif;
+        }
+
+        * { 
+          box-sizing: border-box; 
+          margin: 0; 
+          padding: 0; 
+          outline: none; 
+        }
+
+        body {
+          background-color: var(--bg-dark);
+          color: var(--text-main);
+          font-family: var(--font-body);
+          overflow-x: hidden;
+          min-height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          position: relative;
+        }
+
+        /* --- Background Elements --- */
+        #bg-canvas {
+          position: fixed;
+          top: 0; left: 0; width: 100%; height: 100%;
+          z-index: -2;
+        }
+
+        .ambient-glow {
+          position: fixed;
+          width: 800px; height: 800px;
+          background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+          top: -300px; left: -300px;
+          z-index: -1;
+          animation: float 15s infinite ease-in-out;
+          pointer-events: none;
+          filter: blur(80px);
+        }
+
+        .ambient-glow.two {
+          top: auto; bottom: -300px; left: auto; right: -300px;
+          background: radial-gradient(circle, rgba(0,240,255,0.08) 0%, transparent 70%);
+          animation: float 20s infinite ease-in-out reverse;
+        }
+
+        /* --- Film Grain Texture --- */
+        .noise-overlay {
+          position: fixed;
+          top: 0; left: 0; width: 100%; height: 100%;
+          pointer-events: none;
+          z-index: 50;
+          opacity: 0.03;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* --- Liquid Glow (Mouse Follow) --- */
+        #glow {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -2;
+            pointer-events: none;
+            background: radial-gradient(
+                600px circle at var(--x) var(--y), 
+                rgba(99, 102, 241, 0.12),
+                transparent 40%
+            );
+            mix-blend-mode: hard-light;
+        }
+
+        /* --- Glass Panel --- */
+        .glass-panel {
+          width: 100%;
+          max-width: 600px; /* Adjusted for voting focus */
+          margin: 0 auto;
+          padding: 3rem;
+          position: relative;
+
+          /* PURE TRANSPARENCY (NO BLUR) */
+          background:
+            linear-gradient(
+              180deg,
+              rgba(255, 255, 255, 0.10),
+              rgba(255, 255, 255, 0.02)
+            );
+
+          backdrop-filter: none;
+          -webkit-backdrop-filter: none;
+
+          /* Smooth water edges */
+          border-radius: 28px;
+          border: 1px solid rgba(255, 255, 255, 0.28);
+
+          /* Liquid depth */
+          box-shadow:
+            0 20px 40px rgba(0, 0, 0, 0.35),
+            inset 0 1px 1px rgba(255, 255, 255, 0.539),
+            inset 0 -1px 1px rgba(255, 255, 255, 0.15);
+
+          transform: translateZ(0);
+          isolation: isolate;
+        }
+        
+        .glass-panel::after {
+          content: "";
+          position: absolute;
+          inset: -30px;
+          z-index: -1;
+          animation: waterFloat 12s ease-in-out infinite;
+        }
+
+        @keyframes waterFloat {
+          0%   { transform: translateY(0); }
+          50%  { transform: translateY(-6px); }
+          100% { transform: translateY(0); }
+        }
+
+        /* --- Typography --- */
+        .text-gradient {
+          background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-size: 200% auto;
+          animation: textShine 5s linear infinite;
+          font-family: var(--font-head);
+          font-weight: 700;
+          text-align: center;
+          margin-bottom: 0.5rem;
+        }
+
+        @keyframes textShine {
+          to { background-position: 200% center; }
+        }
+
+        /* --- Buttons --- */
+        .btn {
+          display: inline-flex; align-items: center; justify-content: center;
+          padding: 0.9rem 2.5rem; border-radius: 50px;
+          font-weight: 600; font-size: 0.95rem;
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          text-decoration: none;
+          border: none; font-family: var(--font-head); color: white;
+          position: relative; overflow: hidden;
+          z-index: 1;
+          cursor: pointer;
+          width: 100%;
+        }
+
+        .btn-primary { 
+          background: linear-gradient(90deg, var(--primary), var(--secondary)); 
+          box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4); 
+        }
+
+        .btn-primary:hover {
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 20px 40px -5px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn-outline {
+          background: transparent; 
+          border: 1px solid var(--border); 
+          color: var(--text-main);
+          box-shadow: none;
+        }
+
+        .btn-outline:hover {
+          border-color: var(--accent); 
+          color: var(--accent);
+          background: rgba(0, 240, 255, 0.1);
+          box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+
+        /* --- Candidate Cards (Adapted Style) --- */
+        .candidate-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        input[type="radio"] {
+            display: none; /* Hide default radio */
+        }
+
+        .candidate-label {
+            display: flex;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .candidate-label:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateX(5px);
+        }
+
+        /* Selected State */
+        input[type="radio"]:checked + .candidate-label {
+            background: rgba(0, 240, 255, 0.08);
+            border-color: var(--accent);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
+        }
+
+        /* Custom Radio Circle */
+        .radio-circle {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-muted);
+            border-radius: 50%;
+            margin-right: 1rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        input[type="radio"]:checked + .candidate-label .radio-circle {
+            border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        input[type="radio"]:checked + .candidate-label .radio-circle::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px; height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn { from{transform:translate(-50%,-50%) scale(0);} to{transform:translate(-50%,-50%) scale(1);} }
+
+        .candidate-info h3 {
+            font-family: var(--font-head);
+            font-size: 1.1rem;
+            color: var(--text-main);
+        }
+        .candidate-info p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* --- Modals (Water Glass Style) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 10, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.4s ease;
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-card {
+            width: 90%;
+            max-width: 400px;
+            padding: 2.5rem;
+            /* Same Water Style as Main Panel */
+            background: linear-gradient(180deg, rgba(255,255,255,0.15), rgba(255,255,255,0.02));
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 28px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .modal-overlay.open .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-family: var(--font-head);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        .modal-candidate-name {
+            font-size: 1.4rem;
+            color: var(--accent);
+            font-weight: 700;
+            margin: 1.5rem 0;
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-danger {
+            background: linear-gradient(90deg, var(--danger), #ff1f4b);
+            box-shadow: 0 10px 20px -5px rgba(255, 77, 109, 0.4);
+        }
+
+        /* --- Loading / Success State --- */
+        .processing-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 10, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 28px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .processing-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner-ring {
+            width: 60px; height: 60px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .success-check {
+            width: 60px; height: 60px;
+            background: var(--success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.4);
+            transform: scale(0);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .processing-overlay.success .success-check {
+            transform: scale(1);
+        }
+        
+        .processing-overlay.success .spinner-ring {
+            display: none;
+        }
+
+        /* --- Cursor Ripple --- */
+        .cursor-ripple {
+          position: fixed;
+          width: 20px; height: 20px;
+          border-radius: 50%;
+          pointer-events: none;
+          z-index: 9999;
+          border: 2px solid rgba(120, 200, 255, 0.6);
+          background: radial-gradient(circle, rgba(120, 200, 255, 0.25), transparent 60%);
+          transform: translate(-50%, -50%) scale(0.2);
+          opacity: 0.9;
+          animation: rippleWave 0.8s ease-out forwards;
+        }
+
+        @keyframes rippleWave {
+          to {
+            transform: translate(-50%, -50%) scale(3.5);
+            opacity: 0;
+          }
+        }
+
+        /* --- Mobile --- */
+        @media (max-width: 768px) {
+            .glass-panel {
+                padding: 2rem 1.5rem;
+                max-width: 90%;
+            }
+            .btn { padding: 0.8rem 1.5rem; font-size: 0.9rem; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(50px, 80px) rotate(5deg); }
+        }
+    </style>
 </head>
 <body>
 
-    <div class="float-wrapper">
-     <div id="page-transition-overlay"></div>
+    <!-- Background Elements -->
+    <canvas id="bg-canvas"></canvas>
+    <div class="ambient-glow"></div>
+    <div class="ambient-glow two"></div>
+    <div class="noise-overlay"></div>
+    <div id="glow"></div>
 
-    <div class="glass-panel" style="max-width: 600px;">
-        <h1 class="text-gradient" style="text-align: center; margin-bottom: 1rem;">Cast Your Vote</h1>
-        <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">Selection is irreversible and recorded on the ledger.</p>
+    <!-- Main Page Wrapper -->
+    <div class="page-center">
+        <div class="glass-panel">
+            
+            <!-- Internal Loading/Success Overlay -->
+            <div id="processingOverlay" class="processing-overlay">
+                <div class="spinner-ring"></div>
+                <div class="success-check">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <h3 id="statusText" style="margin-top: 1.5rem; font-family: var(--font-head); font-weight: 500;">Encrypting...</h3>
+            </div>
 
-        <form method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
-            {% for candidate in candidates %}
-            <label style="background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 16px; border: 1px solid var(--border); display: flex; align-items: center; gap: 1rem; cursor: pointer; transition: 0.3s;">
-                <input type="radio" name="candidate" value="{{ candidate }}" required style="transform: scale(1.5);">
-                <span style="font-size: 1.2rem; font-weight: 500;">{{ candidate }}</span>
-            </label>
-            {% endfor %}
+            <h1 class="text-gradient">Cast Your Vote</h1>
+            <p style="text-align: center; color: var(--text-muted); margin-bottom: 2rem;">
+                Selection is irreversible and recorded on the immutable ledger.
+            </p>
 
-            <button type="submit" class="btn btn-primary" style="margin-top: 1rem;">✅ Submit Vote</button>
-        </form>
+            <form id="voteForm" method="POST">
+                <div class="candidate-list">
+                    
+                    <!-- Candidate 1 -->
+                    <!-- 
+                       FLASK NOTE: Replace the static input block below with:
+                       {% for candidate in candidates %}
+                       <input type="radio" name="candidate" id="{{ candidate|replace(' ', '_') }}" value="{{ candidate }}">
+                       <label for="{{ candidate|replace(' ', '_') }}" class="candidate-label">
+                           <div class="radio-circle"></div>
+                           <div class="candidate-info">
+                               <h3>{{ candidate }}</h3>
+                               <p>Candidate</p>
+                           </div>
+                       </label>
+                       {% endfor %}
+                    -->
 
-        <a href="/" class="btn btn-outline" style="margin-top: 1.5rem; width: 100%;">Cancel</a>
+                    <input type="radio" name="candidate" id="c1" value="Elena Sterling">
+                    <label for="c1" class="candidate-label">
+                        <div class="radio-circle"></div>
+                        <div class="candidate-info">
+                            <h3>DHANUSH</h3>
+                            <p>Progressive Alliance</p>
+                        </div>
+                    </label>
+
+                    <!-- Candidate 2 -->
+                    <input type="radio" name="candidate" id="c2" value="Marcus Vance">
+                    <label for="c2" class="candidate-label">
+                        <div class="radio-circle"></div>
+                        <div class="candidate-info">
+                            <h3>FAYAS</h3>
+                            <p>Future Front</p>
+                        </div>
+                    </label>
+
+                    <!-- Candidate 3 -->
+                    <input type="radio" name="candidate" id="c3" value="Juna Doe">
+                    <label for="c3" class="candidate-label">
+                        <div class="radio-circle"></div>
+                        <div class="candidate-info">
+                            <h3>JAI AKASH</h3>
+                            <p>Independent</p>
+                        </div>
+                    </label>
+                    <input type="radio" name="candidate" id="c3" value="Juna Doe">
+                    <label for="c4" class="candidate-label">
+                        <div class="radio-circle"></div>
+                        <div class="candidate-info">
+                            <h3>BARANI</h3>
+                            <p>NO BODY</p>
+                        </div>
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Submit Vote
+                </button>
+            </form>
+
+            <a href="/" class="btn btn-outline" style="margin-top: 1rem;">
+                Cancel
+            </a>
+        </div>
     </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal-card">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">🛡️</div>
+            <h2 class="modal-title">Confirm Vote</h2>
+            <p style="color: var(--text-muted);">You are about to vote for:</p>
+            <div id="modalCandidateDisplay" class="modal-candidate-name">Name Here</div>
+            
+            <div class="modal-actions">
+                <button id="cancelBtn" class="btn btn-outline" style="border-color: rgba(255,255,255,0.1);">Back</button>
+                <button id="confirmBtn" class="btn btn-danger">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script>
+        /* =========================================
+           USER PROVIDED JS (ADAPTED)
+           ========================================= */
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+            const glow = document.getElementById('glow');
+            
+            let width, height;
+            let particles = [];
+            
+            // Configuration
+            const particleCount = 250; 
+            const connectionDistance = 110; 
+            const mouseDistance = 200; 
+
+            let mouse = { x: null, y: null };
+
+            // --- MOUSE GLOW UPDATE ---
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.x;
+                mouse.y = e.y;
+                // Update CSS variable for the glow effect
+                glow.style.setProperty('--x', e.clientX + 'px');
+                glow.style.setProperty('--y', e.clientY + 'px');
+            });
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * width;
+                    this.y = Math.random() * height;
+                    this.vx = (Math.random() - 0.5) * 0.3; 
+                    this.vy = (Math.random() - 0.5) * 0.3;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.color = Math.random() > 0.5 ? 'rgba(255, 255, 255,' : 'rgba(0, 240, 255,';
+                    this.alpha = Math.random() * 0.5 + 0.1;
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    if (this.x < 0 || this.x > width) this.vx *= -1;
+                    if (this.y < 0 || this.y > height) this.vy *= -1;
+
+                    if (mouse.x != null) {
+                        let dx = mouse.x - this.x;
+                        let dy = mouse.y - this.y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < mouseDistance) {
+                            const forceDirectionX = dx / distance;
+                            const forceDirectionY = dy / distance;
+                            const force = (mouseDistance - distance) / mouseDistance;
+                            const directionX = forceDirectionX * force * 1.5; 
+                            const directionY = forceDirectionY * force * 1.5;
+
+                            this.x -= directionX;
+                            this.y -= directionY;
+                        }
+                    }
+                }
+
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color + this.alpha + ')';
+                    ctx.fill();
+                }
+            }
+
+            function initParticles() {
+                particles = [];
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push(new Particle());
+                }
+            }
+
+            function animateParticles() {
+                ctx.clearRect(0, 0, width, height);
+
+                particles.forEach((p, index) => {
+                    p.update();
+                    p.draw();
+
+                    for (let j = index + 1; j < particles.length; j++) {
+                        const p2 = particles[j];
+                        const dx = p.x - p2.x;
+                        const dy = p.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < connectionDistance) {
+                            ctx.beginPath();
+                            const opacity = 1 - (dist / connectionDistance);
+                            ctx.strokeStyle = `rgba(99, 102, 241, ${opacity * 0.15})`; 
+                            ctx.lineWidth = 0.5;
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.stroke();
+                        }
+                    }
+                });
+
+                requestAnimationFrame(animateParticles);
+            }
+
+            // Initialize
+            resize();
+            initParticles();
+            animateParticles();
+
+            window.addEventListener('resize', () => {
+                resize();
+                initParticles();
+            });
+        });
+
+        /* --- Page Transition (Existing) --- */
+        document.querySelectorAll("a").forEach(link => {
+            if (link.href && link.target !== "_blank") {
+                link.addEventListener("click", e => {
+                    e.preventDefault();
+                    document.body.classList.add("is-exiting");
+                    setTimeout(() => {
+                        window.location.href = link.href;
+                    }, 700);
+                });
+            }
+        });
+
+        /* --- Cursor Ripple (Existing) --- */
+        document.addEventListener("click", (e) => {
+            // Check if click is inside modal or button to avoid messy ripples
+            if(e.target.closest('.btn')) return; 
+
+            const ripple = document.createElement("div");
+            ripple.className = "cursor-ripple";
+            ripple.style.left = `${e.clientX}px`;
+            ripple.style.top = `${e.clientY}px`;
+            document.body.appendChild(ripple);
+            ripple.addEventListener("animationend", () => ripple.remove());
+        });
+        
+        /* Mobile tap support */
+        document.addEventListener("touchstart", (e) => {
+            const touch = e.touches[0];
+            if (!touch) return;
+            const ripple = document.createElement("div");
+            ripple.className = "cursor-ripple";
+            ripple.style.left = `${touch.clientX}px`;
+            ripple.style.top = `${touch.clientY}px`;
+            document.body.appendChild(ripple);
+            ripple.addEventListener("animationend", () => ripple.remove());
+        });
+
+        /* =========================================
+           VOTING LOGIC (ADDED)
+           ========================================= */
+        const voteForm = document.getElementById('voteForm');
+        const confirmModal = document.getElementById('confirmModal');
+        const modalCandidateDisplay = document.getElementById('modalCandidateDisplay');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const confirmBtn = document.getElementById('confirmBtn');
+        
+        const processingOverlay = document.getElementById('processingOverlay');
+        const statusText = document.getElementById('statusText');
+
+        // 1. Intercept Form Submit
+        voteForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const selected = document.querySelector('input[name="candidate"]:checked');
+            if (selected) {
+                modalCandidateDisplay.textContent = selected.value;
+                confirmModal.classList.add('open');
+            }
+        });
+
+        // 2. Cancel Modal
+        cancelBtn.addEventListener('click', () => {
+            confirmModal.classList.remove('open');
+        });
+
+        // 3. Final Submit Action
+        confirmBtn.addEventListener('click', () => {
+            confirmModal.classList.remove('open');
+            processingOverlay.classList.add('active');
+
+            // Simulation Steps
+            setTimeout(() => {
+                statusText.textContent = "Connecting to Node...";
+            }, 1000);
+
+            setTimeout(() => {
+                statusText.textContent = "Hashing Block...";
+            }, 2500);
+
+            setTimeout(() => {
+                processingOverlay.classList.add('success');
+                statusText.textContent = "Vote Recorded Successfully";
+                statusText.style.color = "var(--success)";
+                
+                // Optional: Actually submit the form via JS here
+                // voteForm.submit();
+            }, 4000);
+        });
+    </script>
 </body>
 </html>
